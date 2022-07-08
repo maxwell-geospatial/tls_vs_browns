@@ -1,9 +1,3 @@
-# Aim: Preprocess `.las` files in preparation to metric computing. 
-# Arguments: USer needs to provide path to folder with the list of files, and new path to save the processed files. 
-# Output: Code creates new preprocessed `.las` files.
-
-# Library loading ----
-
 library(nabor)
 library(dplyr)
 library(tmap)
@@ -221,14 +215,4 @@ nnFilter2 = function(las, d = 0.05, n = 2){
   las = filter_poi(las, keep)
   return(las)
 }
-
-las2xyz = function(las){
-  
-  if(class(las)[1] != "LAS")
-    stop("las must be a LAS object")
-  
-  las = las@data[,c('X','Y','Z')] %>% as.matrix
-  return(las)
-}
-
 

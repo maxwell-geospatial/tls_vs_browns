@@ -45,8 +45,8 @@ names(theCoords2) <- c("Name", "X", "Y", "Z")
 theCoords3 <- theCoords2 %>% filter(complete.cases(.))
 
 #Set input and output directories
-inDir <- "D:/ptx_data/"
-outDir <- "D:/ptx/out/"
+inDir <- "D:/ptx/out/for_comparison/rotate/"
+outDir <- "D:/ptx/out/for_comparison/all_subset/"
 
 circleRad <- 10
 r1 <- 4
@@ -71,8 +71,8 @@ clipIt(lasIn, paste0(outDir, "donut/", "ptx1.las"), r1 , r2)
 
 sN <- clip_circle(lasIn, 0, 5.5, 1)
 sS <- clip_circle(lasIn, 0, -4.5, 1)
-sW <- clip_circle(lasIn, -4.5, 0, 1)
-sE <- clip_circle(lasIn, 5.5, 0, 1)
+sW <- clip_circle(lasIn, -5.5, 0, 1)
+sE <- clip_circle(lasIn, 4.5, 0, 1)
 writeLAS(sN, paste0(outDir, "sites/", "ptx1_N.las"))
 writeLAS(sS, paste0(outDir, "sites/", "ptx1_S.las"))
 writeLAS(sW, paste0(outDir, "sites/", "ptx1_W.las"))
