@@ -49,8 +49,8 @@ inDir <- "D:/ptx_data/"
 outDir <- "D:/ptx/out/"
 
 circleRad <- 10
-r1 <- 4.5
-r2 <- 6.5
+r1 <- 4
+r2 <- 6
 sampDist <- 5.5
 
 ptxIn <- paste0(inDir, "2021_0927_1557.ptx")
@@ -70,18 +70,18 @@ lasIn <- readLAS(paste0(outDir, "normalized/", "ptx1.las"))
 clipIt(lasIn, paste0(outDir, "donut/", "ptx1.las"), r1 , r2)
 
 sN <- clip_circle(lasIn, 0, 5.5, 1)
-sS <- clip_circle(lasIn, 0, -5.5, 1)
-sW <- clip_circle(lasIn, -5.5, 0, 1)
+sS <- clip_circle(lasIn, 0, -4.5, 1)
+sW <- clip_circle(lasIn, -4.5, 0, 1)
 sE <- clip_circle(lasIn, 5.5, 0, 1)
 writeLAS(sN, paste0(outDir, "sites/", "ptx1_N.las"))
 writeLAS(sS, paste0(outDir, "sites/", "ptx1_S.las"))
 writeLAS(sW, paste0(outDir, "sites/", "ptx1_W.las"))
 writeLAS(sE, paste0(outDir, "sites/", "ptx1_E.las"))
 
-tN <- clip_transect(lasIn, c(0,0), c(0,10), .5)
-tS <- clip_transect(lasIn, c(0,0), c(0,-10), .5)
-tW <- clip_transect(lasIn, c(0,0), c(-10,0), .5)
-tE <- clip_transect(lasIn, c(0,0), c(10,0), .5)
+tN <- clip_transect(lasIn, c(0,0), c(0,10), 1)
+tS <- clip_transect(lasIn, c(0,0), c(0,-10), 1)
+tW <- clip_transect(lasIn, c(0,0), c(-10,0), 1)
+tE <- clip_transect(lasIn, c(0,0), c(10,0), 1)
 
 writeLAS(tN, paste0(outDir, "transect/", "ptx1_N.las"))
 writeLAS(tS, paste0(outDir, "transect/", "ptx1_S.las"))
