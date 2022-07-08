@@ -216,3 +216,11 @@ nnFilter2 = function(las, d = 0.05, n = 2){
   return(las)
 }
 
+las2xyz = function(las){
+  
+  if(class(las)[1] != "LAS")
+    stop("las must be a LAS object")
+  
+  las = las@data[,c('X','Y','Z')] %>% as.matrix
+  return(las)
+}
