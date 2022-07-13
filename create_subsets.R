@@ -39,30 +39,22 @@ lasdata = data.frame(X = c(0.001, 0.001, 0.001),
 lhead = header_create(lasdata)
 
 #Set input and output directories
-inDir <- "D:/ptx/out/for_comparison/rotate/"
+inDir <- "D:/ptx/out/for_comparison/no_trees3/"
 outDir <- "D:/ptx/out/for_comparison/all_subsets/"
 
-#Radii for donut
 r1 <- 4
 r2 <- 6
 
-#List input files
 files <-list.files(pattern=".las", inDir)   
 
-#Loop through input files
+
 for(i in 1:length(files)){
   
-  #Grab file name
   file <- files[i]
-  #Read in file
   lasIn <- readLAS(paste0(inDir, file))
-  #Clip to 10 m radius and save
   clipIt(lasIn, paste0(outDir, "clip/", file), 0 , 10)
-  #Read back in clipped file
   lasIn <- readLAS(paste0(outDir, "clip/", file))
-  #Clip to donut ring and save
   clipIt(lasIn, paste0(outDir, "donut/", file), r1 , r2)
-  #Clip at sample sites and save
   sN <- clip_circle(lasIn, 0, 5.5, 1)
   sS <- clip_circle(lasIn, 0, -4.5, 1)
   sW <- clip_circle(lasIn, -5.5, 0, 1)
@@ -72,25 +64,20 @@ for(i in 1:length(files)){
   writeLAS(sW, paste0(outDir, "siteW/", file))
   writeLAS(sE, paste0(outDir, "siteE/", file))
   
-  #Clip and save along transects
   tN <- clip_transect(lasIn, c(0,.5), c(0,10), 1)
   tS <- clip_transect(lasIn, c(0,-.5), c(0,-10), 1)
   tW <- clip_transect(lasIn, c(-.5,0), c(-10,0), 1)
   tE <- clip_transect(lasIn, c(.5,0), c(10,0), 1)
+  
   writeLAS(tN, paste0(outDir, "transectsScratch/N_", file))
   writeLAS(tS, paste0(outDir, "transectsScratch/S_", file))
   writeLAS(tW, paste0(outDir, "transectsScratch/W_", file))
   writeLAS(tE, paste0(outDir, "transectsScratch/E_", file))
-  
-  #Read back in and merge all transects
   filelist <- c(paste0(outDir, "transectsScratch/N_", file), 
                 paste0(outDir, "transectsScratch/S_", file), 
                 paste0(outDir, "transectsScratch/W_", file), 
                 paste0(outDir, "transectsScratch/E_", file))
   allT <- rlas::read.las(filelist)
   write.las(paste0(outDir, "transects/", file), lhead, allT)
-  
   print(paste0("Completed for ", file))
 }
-
-

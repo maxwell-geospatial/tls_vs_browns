@@ -62,7 +62,7 @@ heightBinMetrics = function(la, b1, b2, b3, b4, bMax, prefix){
   not_ground_cnt <- length(lng@data$Z) 
   #Percent of returns that are ground
   per_ground <- (ground_cnt/(not_ground_cnt+ground_cnt))*100 
-
+  
   #Get l1 metrics
   l1_cnt <- length(l1@data$Z)
   l1_per <- (l1_cnt/(not_ground_cnt))*100 
@@ -128,7 +128,7 @@ heightBinMetrics = function(la, b1, b2, b3, b4, bMax, prefix){
   q9 <- ng_quart[9]
   
   #Merge metrics to dataframe
-  all_metrics <- as.data.frame(cbind(ground_cnt, not_ground_cnt, per_ground, ng_tgi, ng_vari,
+  all_metrics <- as.data.frame(cbind(ground_cnt, not_ground_cnt, per_ground,
                                      ng_cnt, ng_per, ng_mean, ng_median, ng_std, ng_skew,ng_kurt,
                                      q1, q2, q3, q4, q5, q6, q7, q8, q9,
                                      l1_cnt, l1_per, l1_mean, l1_median, l1_std, l1_skew,l1_kurt,
@@ -137,7 +137,7 @@ heightBinMetrics = function(la, b1, b2, b3, b4, bMax, prefix){
                                      l4_cnt, l4_per, l4_mean, l4_median, l4_std, l4_skew,l4_kurt,
                                      l5_cnt, l5_per, l5_mean, l5_median, l5_std, l5_skew,l5_kurt))
   
-
+  
   
   #Rename all columns
   cNames <- names(all_metrics)
