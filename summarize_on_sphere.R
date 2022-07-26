@@ -197,16 +197,13 @@ summarizeSpheres <- function(rast, bins){
   #Calculate the areas of each voxel
   asPnts2$area <- ((pi*((asPnts2$r+.5)^3)*(4/3)) - (pi*((asPnts2$r-.5)^3)*(4/3)))/(ncol(rast)*nrow(rast))
   
-  asPnts2$r2 <- asPnts2$r/(sin(abs(asPnts2$p)))
-  
   #Convert from spherical coordinates back to Cartesian
-  toCart <- as.data.frame(sph2cart(theta=asPnts2$t, 
-                              phi=asPnts2$p, 
-                              r=asPnts2$r))
+  asPnts2$X2 <- asPnts2$r*cos(asPnts2$t*0.01745329)*cos(asPnts2$p*0.01745329)
+  asPnts2$Y2 <- asPnts2$r*sin(asPnts2$t*0.01745329)*cos(asPnts2$p*0.01745329)
+  asPnts2$Z2 <- asPnts2$r*sin(asPnts2$p*0.01745329)
   #Add Cartesian coordinates back to the table
-  asPnts2 <- bind_cols(asPnts2, toCart)
   #Add height of the scanner back to the points so coordinates match the original point cloud
-  asPnts2$z <- asPnts2$z + 2
+  asPnts2$Z2 <- asPnts2$Z + 2
   #return(sphere_metrics)
   return(asPnts2)
 }
@@ -225,15 +222,14 @@ test <- on_sphere_multi_v2(tlsData=las1, radii=radii, height=height, thetaDiv=th
 summary1 <- summarizeSpheres(test,26)
 
 #Post-Process table
-names(summary1) <- c("t", "p", "Intensity", "r", "Area", "r2", "X", "Y", "Z") #Rename columns
-summary1$Z <- summary1$r2
+names(summary1) <- c("t", "p", "Intensity", "r", "Area", "X", "Y", "Z") #Rename columns
 summary1 <- mutate(summary1, dist = sqrt(X^2+Y^2)) #Calculate distance from sensor in X/Y plane
 #Augment intensity data to that data are integer and occlusion is coded to 101
 summary1$Intensity <- summary1$Intensity*100 
 summary1$Intensity <- as.integer(summary1$Intensity)
 summary1 <- summary1 %>% mutate(Intensity2 = ifelse(Intensity == 999900, 101, Intensity))
 #Extract only points within 10 m of the sensor in the X/Y plane
-summary2 <- summary1 %>% filter((X<10 & X >-10) & (Y<10 & Y >-10) & (Z > -2))
+summary2 <- summary1 %>% filter((X<10 & X >-10) & (Y<10 & Y >-10) & (Z >= 0 & Z <= 20))
 #Subset needed fields
 summary3 <- summary2 %>% dplyr::select(X, Y, Z, Intensity2)
 names(summary3) <- c("X", "Y", "Z", "Intensity")
@@ -246,7 +242,9 @@ occluded <- summary3 %>% filter(Intensity == 101)
 returned <- summary3 %>% filter(Intensity >0 & Intensity <101)
 returned$Intensity <- as.integer(returned$Intensity)
 gaps <- summary3 %>% filter(Intensity == 0)
-write.las("D:/new_calc.las", lhead, returned)
+write.las("D:/returned.las", lhead, returned)
+write.las("D:/occluded.las", lhead, occluded)
+write.las("D:/gaps.las", lhead, gaps)
 
 per_occluded = ((sum(occluded$Area))/(sum(summary3$Area)))*100
 

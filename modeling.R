@@ -49,12 +49,17 @@ tls_grd[is.na(tls_grd)] <- 0
 
 #Train and Predict Function =========================================================================
 modelFunc <- function(site, data, replicates){
+  trainctrl <- trainControl(method = "cv", number = 5, verboseIter = FALSE)
   metOut <- data.frame(siteName=character(), 
                        replicate=numeric(), 
                        set=character(), 
                        variable=character(), 
                        rmse=numeric(),
-                       rsq=numeric())
+                       rsq=numeric(),
+                       mae=numeric(),
+                       ccc=numeric(),
+                       rpd=numeric(),
+                       rpiq=numeric())
   siteName <- site
   dataIn <- data %>% filter(SiteN == site)
   pltN <- 1
@@ -64,6 +69,10 @@ modelFunc <- function(site, data, replicates){
   fblECol <- 14
   fblWCol <- 17
   hourCol <- 25
+  h1 <- 20
+  h10 <- 21
+  h100 <- 22
+  h1000 <- 23
   
   pCols <-c(28:86)
   dCols <- c(87:140)
@@ -78,6 +87,16 @@ modelFunc <- function(site, data, replicates){
   t_fbl <- dataIn[,c(fblCol, tCols)]
   p_hr <- dataIn[,c(hourCol, pCols)]
   t_hr <- dataIn[,c(hourCol, tCols)]
+  
+  p_hr1 <- dataIn[,c(h1, pCols)]
+  t_hr1 <- dataIn[,c(h1, tCols)]
+  p_hr10 <- dataIn[,c(h10, pCols)]
+  t_hr10 <- dataIn[,c(h10, tCols)]
+  p_hr100 <- dataIn[,c(h100, pCols)]
+  t_hr100 <- dataIn[,c(h100, tCols)]
+  p_hr1000 <- dataIn[,c(h1000, pCols)]
+  t_hr1000 <- dataIn[,c(h1000, tCols)]
+  
   s_fblN <- dataIn[,c(pltN, fblNCol, nCols)]
   s_fblS <- dataIn[,c(pltN, fblSCol, sCols)]
   s_fblE <- dataIn[,c(pltN, fblECol, eCols)]
@@ -97,15 +116,27 @@ modelFunc <- function(site, data, replicates){
     test <- setdiff(p_fbl, train)
     train <- data.frame(train)
     test <- data.frame(test)
-    m1 <- randomForest(x=train[,2:ncol(train)], y=train[,1], ntree=1000)
+    m1 <- train(x=train[,2:ncol(train)], y=train[,1], method = "ranger", 
+                      tuneLength = 10,
+                      ntree=500,
+                      trControl = trainctrl,
+                      metric="RMSE")
     p1 <- predict(m1, test)
-    rmse1 <- Metrics::rmse(test[,1], p1)
+    rmse1 <- yardstick::rmse_vec(truth=as.numeric(test[,1]), estimate=as.numeric(p1))
     rsq1 <- yardstick::rsq_vec(truth=as.numeric(test[,1]), estimate=as.numeric(p1))
+    ccc1 <- yardstick::ccc_vec(truth=as.numeric(test[,1]), estimate=as.numeric(p1))
+    mae1 <- yardstick::mae_vec(truth=as.numeric(test[,1]), estimate=as.numeric(p1))
+    rpd1 <- yardstick::rpd_vec(truth=as.numeric(test[,1]), estimate=as.numeric(p1))
+    rpiq1 <- yardstick::rpiq_vec(truth=as.numeric(test[,1]), estimate=as.numeric(p1))
     result1 <- data.frame(siteName=site, 
                           replicate=repNum, 
                           set=set1, 
                           variable=variable1, 
-                          rmse=rmse1)
+                          rmse=rmse1,
+                          rsq=rsq1,
+                          ccc=ccc1,
+                          rpd=rpd1,
+                          rpiq=rpiq1)
     metOut <- bind_rows(metOut, result1)
   }
   for(r in 1:replicates){
@@ -116,16 +147,27 @@ modelFunc <- function(site, data, replicates){
     test <- setdiff(d_fbl, train)
     train <- data.frame(train)
     test <- data.frame(test)
-    m1 <- randomForest(x=train[,2:ncol(train)], y=train[,1], ntree=1000)
+    m1 <- train(x=train[,2:ncol(train)], y=train[,1], method = "ranger", 
+                tuneLength = 10,
+                ntree=500,
+                trControl = trainctrl,
+                metric="RMSE")
     p1 <- predict(m1, test)
-    rmse1 <- Metrics::rmse(test[,1], p1)
+    rmse1 <- yardstick::rmse_vec(truth=as.numeric(test[,1]), estimate=as.numeric(p1))
     rsq1 <- yardstick::rsq_vec(truth=as.numeric(test[,1]), estimate=as.numeric(p1))
+    ccc1 <- yardstick::ccc_vec(truth=as.numeric(test[,1]), estimate=as.numeric(p1))
+    mae1 <- yardstick::mae_vec(truth=as.numeric(test[,1]), estimate=as.numeric(p1))
+    rpd1 <- yardstick::rpd_vec(truth=as.numeric(test[,1]), estimate=as.numeric(p1))
+    rpiq1 <- yardstick::rpiq_vec(truth=as.numeric(test[,1]), estimate=as.numeric(p1))
     result1 <- data.frame(siteName=site, 
                           replicate=repNum, 
                           set=set1, 
                           variable=variable1, 
                           rmse=rmse1,
-                          rsq=rsq1)
+                          rsq=rsq1,
+                          ccc=ccc1,
+                          rpd=rpd1,
+                          rpiq=rpiq1)
     metOut <- bind_rows(metOut, result1)
   }
   for(r in 1:replicates){
@@ -136,16 +178,27 @@ modelFunc <- function(site, data, replicates){
     test <- setdiff(t_fbl, train)
     train <- data.frame(train)
     test <- data.frame(test)
-    m1 <- randomForest(x=train[,2:ncol(train)], y=train[,1], ntree=1000)
+    m1 <- train(x=train[,2:ncol(train)], y=train[,1], method = "ranger", 
+                tuneLength = 10,
+                ntree=500,
+                trControl = trainctrl,
+                metric="RMSE")
     p1 <- predict(m1, test)
-    rmse1 <- Metrics::rmse(test[,1], p1)
+    rmse1 <- yardstick::rmse_vec(truth=as.numeric(test[,1]), estimate=as.numeric(p1))
     rsq1 <- yardstick::rsq_vec(truth=as.numeric(test[,1]), estimate=as.numeric(p1))
+    ccc1 <- yardstick::ccc_vec(truth=as.numeric(test[,1]), estimate=as.numeric(p1))
+    mae1 <- yardstick::mae_vec(truth=as.numeric(test[,1]), estimate=as.numeric(p1))
+    rpd1 <- yardstick::rpd_vec(truth=as.numeric(test[,1]), estimate=as.numeric(p1))
+    rpiq1 <- yardstick::rpiq_vec(truth=as.numeric(test[,1]), estimate=as.numeric(p1))
     result1 <- data.frame(siteName=site, 
                           replicate=repNum, 
                           set=set1, 
                           variable=variable1, 
                           rmse=rmse1,
-                          rsq=rsq1)
+                          rsq=rsq1,
+                          ccc=ccc1,
+                          rpd=rpd1,
+                          rpiq=rpiq1)
     metOut <- bind_rows(metOut, result1)
   }
   for(r in 1:replicates){
@@ -156,16 +209,27 @@ modelFunc <- function(site, data, replicates){
     test <- setdiff(p_hr, train)
     train <- data.frame(train)
     test <- data.frame(test)
-    m1 <- randomForest(x=train[,2:ncol(train)], y=train[,1], ntree=1000)
+    m1 <- train(x=train[,2:ncol(train)], y=train[,1], method = "ranger", 
+                tuneLength = 10,
+                ntree=500,
+                trControl = trainctrl,
+                metric="RMSE")
     p1 <- predict(m1, test)
-    rmse1 <- Metrics::rmse(test[,1], p1)
+    rmse1 <- yardstick::rmse_vec(truth=as.numeric(test[,1]), estimate=as.numeric(p1))
     rsq1 <- yardstick::rsq_vec(truth=as.numeric(test[,1]), estimate=as.numeric(p1))
+    ccc1 <- yardstick::ccc_vec(truth=as.numeric(test[,1]), estimate=as.numeric(p1))
+    mae1 <- yardstick::mae_vec(truth=as.numeric(test[,1]), estimate=as.numeric(p1))
+    rpd1 <- yardstick::rpd_vec(truth=as.numeric(test[,1]), estimate=as.numeric(p1))
+    rpiq1 <- yardstick::rpiq_vec(truth=as.numeric(test[,1]), estimate=as.numeric(p1))
     result1 <- data.frame(siteName=site, 
                           replicate=repNum, 
                           set=set1, 
                           variable=variable1, 
                           rmse=rmse1,
-                          rsq=rsq1)
+                          rsq=rsq1,
+                          ccc=ccc1,
+                          rpd=rpd1,
+                          rpiq=rpiq1)
     metOut <- bind_rows(metOut, result1)
   }
   for(r in 1:replicates){
@@ -176,16 +240,275 @@ modelFunc <- function(site, data, replicates){
     test <- setdiff(t_hr, train)
     train <- data.frame(train)
     test <- data.frame(test)
-    m1 <- randomForest(x=train[,2:ncol(train)], y=train[,1], ntree=1000)
+    m1 <- train(x=train[,2:ncol(train)], y=train[,1], method = "ranger", 
+                tuneLength = 10,
+                ntree=500,
+                trControl = trainctrl,
+                metric="RMSE")
     p1 <- predict(m1, test)
-    rmse1 <- Metrics::rmse(test[,1], p1)
+    rmse1 <- yardstick::rmse_vec(truth=as.numeric(test[,1]), estimate=as.numeric(p1))
     rsq1 <- yardstick::rsq_vec(truth=as.numeric(test[,1]), estimate=as.numeric(p1))
+    ccc1 <- yardstick::ccc_vec(truth=as.numeric(test[,1]), estimate=as.numeric(p1))
+    mae1 <- yardstick::mae_vec(truth=as.numeric(test[,1]), estimate=as.numeric(p1))
+    rpd1 <- yardstick::rpd_vec(truth=as.numeric(test[,1]), estimate=as.numeric(p1))
+    rpiq1 <- yardstick::rpiq_vec(truth=as.numeric(test[,1]), estimate=as.numeric(p1))
     result1 <- data.frame(siteName=site, 
                           replicate=repNum, 
                           set=set1, 
                           variable=variable1, 
                           rmse=rmse1,
-                          rsq=rsq1)
+                          rsq=rsq1,
+                          ccc=ccc1,
+                          rpd=rpd1,
+                          rpiq=rpiq1)
+    metOut <- bind_rows(metOut, result1)
+  }
+  for(r in 1:replicates){
+    repNum <- r
+    set1 = "Plot"
+    variable1 = "h1"
+    train <- p_hr1 %>% sample_frac(.7)
+    test <- setdiff(p_hr1, train)
+    train <- data.frame(train)
+    test <- data.frame(test)
+    m1 <- train(x=train[,2:ncol(train)], y=train[,1], method = "ranger", 
+                tuneLength = 10,
+                ntree=500,
+                trControl = trainctrl,
+                metric="RMSE")
+    p1 <- predict(m1, test)
+    rmse1 <- yardstick::rmse_vec(truth=as.numeric(test[,1]), estimate=as.numeric(p1))
+    rsq1 <- yardstick::rsq_vec(truth=as.numeric(test[,1]), estimate=as.numeric(p1))
+    ccc1 <- yardstick::ccc_vec(truth=as.numeric(test[,1]), estimate=as.numeric(p1))
+    mae1 <- yardstick::mae_vec(truth=as.numeric(test[,1]), estimate=as.numeric(p1))
+    rpd1 <- yardstick::rpd_vec(truth=as.numeric(test[,1]), estimate=as.numeric(p1))
+    rpiq1 <- yardstick::rpiq_vec(truth=as.numeric(test[,1]), estimate=as.numeric(p1))
+    result1 <- data.frame(siteName=site, 
+                          replicate=repNum, 
+                          set=set1, 
+                          variable=variable1, 
+                          rmse=rmse1,
+                          rsq=rsq1,
+                          ccc=ccc1,
+                          rpd=rpd1,
+                          rpiq=rpiq1)
+    metOut <- bind_rows(metOut, result1)
+  }
+  for(r in 1:replicates){
+    repNum <- r
+    set1 = "Transect"
+    variable1 = "h1"
+    train <- t_hr1 %>% sample_frac(.7)
+    test <- setdiff(t_hr1, train)
+    train <- data.frame(train)
+    test <- data.frame(test)
+    m1 <- train(x=train[,2:ncol(train)], y=train[,1], method = "ranger", 
+                tuneLength = 10,
+                ntree=500,
+                trControl = trainctrl,
+                metric="RMSE")
+    p1 <- predict(m1, test)
+    rmse1 <- yardstick::rmse_vec(truth=as.numeric(test[,1]), estimate=as.numeric(p1))
+    rsq1 <- yardstick::rsq_vec(truth=as.numeric(test[,1]), estimate=as.numeric(p1))
+    ccc1 <- yardstick::ccc_vec(truth=as.numeric(test[,1]), estimate=as.numeric(p1))
+    mae1 <- yardstick::mae_vec(truth=as.numeric(test[,1]), estimate=as.numeric(p1))
+    rpd1 <- yardstick::rpd_vec(truth=as.numeric(test[,1]), estimate=as.numeric(p1))
+    rpiq1 <- yardstick::rpiq_vec(truth=as.numeric(test[,1]), estimate=as.numeric(p1))
+    result1 <- data.frame(siteName=site, 
+                          replicate=repNum, 
+                          set=set1, 
+                          variable=variable1, 
+                          rmse=rmse1,
+                          rsq=rsq1,
+                          ccc=ccc1,
+                          rpd=rpd1,
+                          rpiq=rpiq1)
+    metOut <- bind_rows(metOut, result1)
+  }
+  for(r in 1:replicates){
+    repNum <- r
+    set1 = "Plot"
+    variable1 = "h10"
+    train <- p_hr10 %>% sample_frac(.7)
+    test <- setdiff(p_hr10, train)
+    train <- data.frame(train)
+    test <- data.frame(test)
+    m1 <- train(x=train[,2:ncol(train)], y=train[,1], method = "ranger", 
+                tuneLength = 10,
+                ntree=500,
+                trControl = trainctrl,
+                metric="RMSE")
+    p1 <- predict(m1, test)
+    rmse1 <- yardstick::rmse_vec(truth=as.numeric(test[,1]), estimate=as.numeric(p1))
+    rsq1 <- yardstick::rsq_vec(truth=as.numeric(test[,1]), estimate=as.numeric(p1))
+    ccc1 <- yardstick::ccc_vec(truth=as.numeric(test[,1]), estimate=as.numeric(p1))
+    mae1 <- yardstick::mae_vec(truth=as.numeric(test[,1]), estimate=as.numeric(p1))
+    rpd1 <- yardstick::rpd_vec(truth=as.numeric(test[,1]), estimate=as.numeric(p1))
+    rpiq1 <- yardstick::rpiq_vec(truth=as.numeric(test[,1]), estimate=as.numeric(p1))
+    result1 <- data.frame(siteName=site, 
+                          replicate=repNum, 
+                          set=set1, 
+                          variable=variable1, 
+                          rmse=rmse1,
+                          rsq=rsq1,
+                          ccc=ccc1,
+                          rpd=rpd1,
+                          rpiq=rpiq1)
+    metOut <- bind_rows(metOut, result1)
+  }
+  for(r in 1:replicates){
+    repNum <- r
+    set1 = "Transect"
+    variable1 = "h10"
+    train <- t_hr10 %>% sample_frac(.7)
+    test <- setdiff(t_hr10, train)
+    train <- data.frame(train)
+    test <- data.frame(test)
+    m1 <- train(x=train[,2:ncol(train)], y=train[,1], method = "ranger", 
+                tuneLength = 10,
+                ntree=500,
+                trControl = trainctrl,
+                metric="RMSE")
+    p1 <- predict(m1, test)
+    rmse1 <- yardstick::rmse_vec(truth=as.numeric(test[,1]), estimate=as.numeric(p1))
+    rsq1 <- yardstick::rsq_vec(truth=as.numeric(test[,1]), estimate=as.numeric(p1))
+    ccc1 <- yardstick::ccc_vec(truth=as.numeric(test[,1]), estimate=as.numeric(p1))
+    mae1 <- yardstick::mae_vec(truth=as.numeric(test[,1]), estimate=as.numeric(p1))
+    rpd1 <- yardstick::rpd_vec(truth=as.numeric(test[,1]), estimate=as.numeric(p1))
+    rpiq1 <- yardstick::rpiq_vec(truth=as.numeric(test[,1]), estimate=as.numeric(p1))
+    result1 <- data.frame(siteName=site, 
+                          replicate=repNum, 
+                          set=set1, 
+                          variable=variable1, 
+                          rmse=rmse1,
+                          rsq=rsq1,
+                          ccc=ccc1,
+                          rpd=rpd1,
+                          rpiq=rpiq1)
+    metOut <- bind_rows(metOut, result1)
+  }
+  for(r in 1:replicates){
+    repNum <- r
+    set1 = "Plot"
+    variable1 = "h100"
+    train <- p_hr100 %>% sample_frac(.7)
+    test <- setdiff(p_hr100, train)
+    train <- data.frame(train)
+    test <- data.frame(test)
+    m1 <- train(x=train[,2:ncol(train)], y=train[,1], method = "ranger", 
+                tuneLength = 10,
+                ntree=500,
+                trControl = trainctrl,
+                metric="RMSE")
+    p1 <- predict(m1, test)
+    rmse1 <- yardstick::rmse_vec(truth=as.numeric(test[,1]), estimate=as.numeric(p1))
+    rsq1 <- yardstick::rsq_vec(truth=as.numeric(test[,1]), estimate=as.numeric(p1))
+    ccc1 <- yardstick::ccc_vec(truth=as.numeric(test[,1]), estimate=as.numeric(p1))
+    mae1 <- yardstick::mae_vec(truth=as.numeric(test[,1]), estimate=as.numeric(p1))
+    rpd1 <- yardstick::rpd_vec(truth=as.numeric(test[,1]), estimate=as.numeric(p1))
+    rpiq1 <- yardstick::rpiq_vec(truth=as.numeric(test[,1]), estimate=as.numeric(p1))
+    result1 <- data.frame(siteName=site, 
+                          replicate=repNum, 
+                          set=set1, 
+                          variable=variable1, 
+                          rmse=rmse1,
+                          rsq=rsq1,
+                          ccc=ccc1,
+                          rpd=rpd1,
+                          rpiq=rpiq1)
+    metOut <- bind_rows(metOut, result1)
+  }
+  for(r in 1:replicates){
+    repNum <- r
+    set1 = "Transect"
+    variable1 = "h100"
+    train <- t_hr100 %>% sample_frac(.7)
+    test <- setdiff(t_hr100, train)
+    train <- data.frame(train)
+    test <- data.frame(test)
+    m1 <- train(x=train[,2:ncol(train)], y=train[,1], method = "ranger", 
+                tuneLength = 10,
+                ntree=500,
+                trControl = trainctrl,
+                metric="RMSE")
+    p1 <- predict(m1, test)
+    rmse1 <- yardstick::rmse_vec(truth=as.numeric(test[,1]), estimate=as.numeric(p1))
+    rsq1 <- yardstick::rsq_vec(truth=as.numeric(test[,1]), estimate=as.numeric(p1))
+    ccc1 <- yardstick::ccc_vec(truth=as.numeric(test[,1]), estimate=as.numeric(p1))
+    mae1 <- yardstick::mae_vec(truth=as.numeric(test[,1]), estimate=as.numeric(p1))
+    rpd1 <- yardstick::rpd_vec(truth=as.numeric(test[,1]), estimate=as.numeric(p1))
+    rpiq1 <- yardstick::rpiq_vec(truth=as.numeric(test[,1]), estimate=as.numeric(p1))
+    result1 <- data.frame(siteName=site, 
+                          replicate=repNum, 
+                          set=set1, 
+                          variable=variable1, 
+                          rmse=rmse1,
+                          rsq=rsq1,
+                          ccc=ccc1,
+                          rpd=rpd1,
+                          rpiq=rpiq1)
+    metOut <- bind_rows(metOut, result1)
+  }
+  for(r in 1:replicates){
+    repNum <- r
+    set1 = "Plot"
+    variable1 = "h1000"
+    train <- p_hr1000 %>% sample_frac(.7)
+    test <- setdiff(p_hr1000, train)
+    train <- data.frame(train)
+    test <- data.frame(test)
+    m1 <- train(x=train[,2:ncol(train)], y=train[,1], method = "ranger", 
+                tuneLength = 10,
+                ntree=500,
+                trControl = trainctrl,
+                metric="RMSE")
+    p1 <- predict(m1, test)
+    rmse1 <- yardstick::rmse_vec(truth=as.numeric(test[,1]), estimate=as.numeric(p1))
+    rsq1 <- yardstick::rsq_vec(truth=as.numeric(test[,1]), estimate=as.numeric(p1))
+    ccc1 <- yardstick::ccc_vec(truth=as.numeric(test[,1]), estimate=as.numeric(p1))
+    mae1 <- yardstick::mae_vec(truth=as.numeric(test[,1]), estimate=as.numeric(p1))
+    rpd1 <- yardstick::rpd_vec(truth=as.numeric(test[,1]), estimate=as.numeric(p1))
+    rpiq1 <- yardstick::rpiq_vec(truth=as.numeric(test[,1]), estimate=as.numeric(p1))
+    result1 <- data.frame(siteName=site, 
+                          replicate=repNum, 
+                          set=set1, 
+                          variable=variable1, 
+                          rmse=rmse1,
+                          rsq=rsq1,
+                          ccc=ccc1,
+                          rpd=rpd1,
+                          rpiq=rpiq1)
+    metOut <- bind_rows(metOut, result1)
+  }
+  for(r in 1:replicates){
+    repNum <- r
+    set1 = "Transect"
+    variable1 = "h1000"
+    train <- t_hr1000 %>% sample_frac(.7)
+    test <- setdiff(t_hr1000, train)
+    train <- data.frame(train)
+    test <- data.frame(test)
+    m1 <- train(x=train[,2:ncol(train)], y=train[,1], method = "ranger", 
+                tuneLength = 10,
+                ntree=500,
+                trControl = trainctrl,
+                metric="RMSE")
+    p1 <- predict(m1, test)
+    rmse1 <- yardstick::rmse_vec(truth=as.numeric(test[,1]), estimate=as.numeric(p1))
+    rsq1 <- yardstick::rsq_vec(truth=as.numeric(test[,1]), estimate=as.numeric(p1))
+    ccc1 <- yardstick::ccc_vec(truth=as.numeric(test[,1]), estimate=as.numeric(p1))
+    mae1 <- yardstick::mae_vec(truth=as.numeric(test[,1]), estimate=as.numeric(p1))
+    rpd1 <- yardstick::rpd_vec(truth=as.numeric(test[,1]), estimate=as.numeric(p1))
+    rpiq1 <- yardstick::rpiq_vec(truth=as.numeric(test[,1]), estimate=as.numeric(p1))
+    result1 <- data.frame(siteName=site, 
+                          replicate=repNum, 
+                          set=set1, 
+                          variable=variable1, 
+                          rmse=rmse1,
+                          rsq=rsq1,
+                          ccc=ccc1,
+                          rpd=rpd1,
+                          rpiq=rpiq1)
     metOut <- bind_rows(metOut, result1)
   }
   for(r in 1:replicates){
@@ -198,25 +521,37 @@ modelFunc <- function(site, data, replicates){
     trainSites2 <- trainSites$S
     train <- s_fbl %>% filter(Plot_name %in% trainSites2)
     test <- setdiff(s_fbl, train)
-    train <- data.frame(train)
-    test <- data.frame(test)
-    m1 <- randomForest(x=train[,3:ncol(train)], y=train[,2], ntree=1000)
+    m1 <- train(x=train[,3:ncol(train)], y=train[,2], method = "ranger", 
+                tuneLength = 10,
+                ntree=500,
+                trControl = trainctrl,
+                metric="RMSE")
     p1 <- predict(m1, test)
-    rmse1 <- Metrics::rmse(test[,2], p1)
-    rsq1 <- yardstick::rsq_vec(truth=as.numeric(test[,1]), estimate=as.numeric(p1))
+    rmse1 <- yardstick::rmse_vec(truth=as.numeric(test[,2]), estimate=as.numeric(p1))
+    rsq1 <- yardstick::rsq_vec(truth=as.numeric(test[,2]), estimate=as.numeric(p1))
+    ccc1 <- yardstick::ccc_vec(truth=as.numeric(test[,2]), estimate=as.numeric(p1))
+    mae1 <- yardstick::mae_vec(truth=as.numeric(test[,2]), estimate=as.numeric(p1))
+    rpd1 <- yardstick::rpd_vec(truth=as.numeric(test[,2]), estimate=as.numeric(p1))
+    rpiq1 <- yardstick::rpiq_vec(truth=as.numeric(test[,2]), estimate=as.numeric(p1))
     result1 <- data.frame(siteName=site, 
                           replicate=repNum, 
                           set=set1, 
                           variable=variable1, 
                           rmse=rmse1,
-                          rsq=rsq1)
+                          rsq=rsq1,
+                          ccc=ccc1,
+                          rpd=rpd1,
+                          rpiq=rpiq1)
     metOut <- bind_rows(metOut, result1)
   }
   return(metOut)
 }
 
 out_scfmf <- modelFunc("SCFMF", tls_grd, 50)
-out_scfmf <- modelFunc("SCFMF", tls_grd, 50)
-out_scfmf <- modelFunc("SCFMF", tls_grd, 50)
+out_gapdr <- modelFunc("GAPDR", tls_grd, 50)
+out_flsmr <- modelFunc("FLSMR", tls_grd, 50)
 
+all_data2 <- bind_rows(out_scfmf, out_gapdr)
+all_data2 <- bind_rows(all_data2, out_flsmr)
 
+write.csv(all_data2, "D:/tls_browns_results.csv")
